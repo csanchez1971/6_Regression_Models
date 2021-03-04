@@ -1,0 +1,217 @@
+---
+title: "Linear Regression - Multivariate"
+author: "Carlos Sanchez"
+date: "19/02/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+n = 100
+x <- rnorm(n)
+x2 <- rnorm(n)
+x3 <- rnorm(n)
+
+y <- 1 + x + x2 + x3 + rnorm(n, sd = .1)
+ey <- resid(lm(y ~ x2 + x3))
+ex <- resid(lm(x ~ x2 + x3)) 
+sum(ey * ex) / sum(ex^2)
+coef(lm(ey ~ ex - 1))
+coef(lm(y ~ x + x2 + x3))
+```
+
+#Example Mulivariate
+
+```{r}
+require(datasets)
+data(swiss)
+?swiss
+require(GGally)   #Collection of add-ons tools for ggplot2 (pair, etc)
+require(ggplot2)
+library(dplyr)
+```
+
+
+
+```{r}
+g <- ggpairs(swiss, lower = list(continuous = wrap("smooth", size = 0.1)), wrap = c(method = "loess"))
+g
+```
+
+
+
+```{r}
+summary(lm(Fertility ~ ., data = swiss))
+summary(lm(Fertility ~ ., data = swiss))$coef
+```
+
+
+
+```{r}
+summary(lm(Fertility ~ Agriculture, data = swiss))$coef
+
+
+```
+
+How to reverse the sign of a effect?
+
+```{r}
+n <- 100
+x2 <- 1:n
+x1 <- .01 * x2 + runif(n, -.1, .1)
+y <-  -x1 + x2 + rnorm(n, sd = .01)
+
+```
+
+
+
+```{r}
+summary(lm(y ~ x1))$coef
+summary(lm(y ~ x1 + x2))$coef
+```
+
+
+
+```{r}
+dat <- data.frame(y = y, x1 = x1, x2 = x2, ey = resid(lm(y ~ x2)), ex1 = resid(lm(x1 ~ x2)))
+
+g <- ggplot(dat, aes(y = y, x = x1, color = x2)) +
+  geom_point(color = "grey50", size = 2) +
+  geom_smooth(method = lm, se = FALSE, color = "black") +
+  geom_point(size = 2)
+g
+```
+
+
+
+```{r}
+g2 <- ggplot(dat, aes(y = ey, x = ex1, color = x2)) +
+  geom_point(color = "grey50", size = 1.4) +
+  geom_smooth(method = lm, se = FALSE, color = "black") +
+  geom_point(size = 1.4)
+g2
+
+```
+
+
+Problems of including innecesary variable (ex. one that is linear combination of other 2)
+```{r}
+z <-  swiss$Agriculture + swiss$Education
+lm(Fertility ~ . + z, data = swiss)
+```
+
+
+
+```{r}
+require(datasets)
+data("InsectSprays")
+require(stats)
+
+```
+
+
+
+```{r}
+g <- ggplot(data = InsectSprays, aes(y = count, x = spray, fill = spray)) +
+  geom_violin(color = "black", size = 0.5) +
+  xlab("Type of spray") +
+  ylab("Insect count")
+g
+```
+
+
+
+```{r}
+summary(lm(count ~ spray, data =InsectSprays))$coef
+#14.5 is the mean of spray "A", rest Estimates are relative to A. p-value tells us if A from the rest are different
+```
+
+
+If we remove the intercept, then it includes A and the absolute values not relatives. In this case, p-value is compare to 0, instead of A, what doesn't give us much information
+
+```{r}
+summary(lm(count ~ spray - 1, data =InsectSprays))$coef
+```
+
+To use spray "C" as the reference level:
+
+```{r}
+spray2 <- relevel(InsectSprays$spray, "C")
+summary(lm(count ~ spray2, data =InsectSprays))$coef
+
+```
+
+Create a binary variable
+
+```{r}
+swiss <- mutate(swiss, CatholicBin = 1 * (Catholic > 50))
+
+```
+
+
+
+```{r}
+g <-  ggplot(swiss, aes(x = Agriculture, y = Fertility, colour = factor(CatholicBin))) +
+  geom_point(size = 2, color = "black") +
+  geom_point(size =1.5) +
+  xlab("% in Agriculture") +
+  ylab("Fertility")
+g
+```
+
+
+Case when we consider interaction between variables 
+
+1. Model without taking into account type of religion
+
+```{r}
+fit <- lm(Fertility ~ Agriculture, swiss)
+g1 <- g +
+  geom_abline(intercept = coef(fit)[1], slope = coef(fit)[2], size = 1.3)
+g1
+```
+
+
+
+```{r}
+summary(fit)$coef
+```
+
+2. Model considering type of religion but no interaction (parallel slope)
+
+```{r}
+fit <- lm(Fertility ~ Agriculture + factor(CatholicBin), swiss)
+summary(fit)$coef
+
+```
+
+
+
+```{r}
+g1 <- g +
+  geom_abline(intercept = coef(fit)[1], slope = coef(fit)[2], size = 1.3) +
+  geom_abline(intercept = coef(fit)[1] + coef(fit)[3], slope = coef(fit)[2], size = 1.3)
+
+g1
+```
+
+
+3. Model considering type of religion but WITH interaction (different slope)
+
+```{r}
+fit <- lm(Fertility ~ Agriculture * factor(CatholicBin), swiss)  # change the '+' by '*'
+summary(fit)$coef
+```
+
+```{r}
+g1 <- g +
+  geom_abline(intercept = coef(fit)[1], slope = coef(fit)[2], size = 1.3, color= "red") +
+  geom_abline(intercept = coef(fit)[1] + coef(fit)[3], 
+              slope = coef(fit)[2] + coef(fit)[2], 
+              size = 1.3, color ="blue")
+
+g1
+```

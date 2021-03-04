@@ -1,0 +1,133 @@
+---
+title: "Linear Regression Assignment"
+author: "Carlos Sanchez"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(MASS)
+
+```
+
+
+# Executive summary
+
+`mtcars` dataset was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models).
+
+The different variables the dataset has are:
+
+
+*	**mpg**:	    Miles/(US) gallon
+*	**cyl**:	    Number of cylinders
+*	**disp**:     Displacement (cu.in.)
+*	**hp**:       Gross horsepower
+* **drat**:	    Rear axle ratio
+* **wt**:	      Weight (1000 lbs)
+* **qsec**:     1/4 mile time
+* **vs**:       Engine (0 = V-shaped, 1 = straight)
+* **am**:       Transmission (0 = automatic, 1 = manual)
+* **gear**:     Number of forward gears
+* **carb**:     Number of carburetors
+
+If we analyze the head of the dataset and its dimensions, we see that `mtcars` has `r dim(mtcars)[1]` rows and  `r dim(mtcars)[2]` variables.
+
+```{r}
+data(mtcars)
+head(mtcars)
+dim(mtcars)
+```
+
+
+## Exploratory analysis
+
+On a first step, we will compare the means of each group, Manual and Automatic transmissions, both graphically and numerically. One previous step to be done is to renamevariable `am` and make it a factor.
+
+
+```{r, fig.height=3, fig.width=4}
+mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
+ggplot(mtcars, aes(x=am, y=mpg))+
+  geom_boxplot()
+```
+
+
+```{r}
+mtcars %>% group_by(am) %>% summarize(mean=mean(mpg))
+```
+
+
+## Model of mpg ~ am
+
+```{r}
+fit <- lm(mpg ~ am, data = mtcars)
+summary(fit)
+```
+
+
+If we check the values of R-Squared for this model, we see that it's `r round(summary(fit)$r.squared, 3)`, explaining too little variance.
+If we plot the correlation between mpg with the rest of the variables, we can see that some of them have a high correlation which suggest that the final model should include more predictors, not only `am`.
+
+
+```{r, message=F, warning=F}
+ggpairs(mtcars, 
+        lower = list(continuous = wrap("smooth", size = 0.5, method = "loess", alpha = 0.6, color = "blue")), 
+        upper = list(continuous = wrap("cor", size = 2))) +
+  theme(
+  axis.text = element_text(size = 6),
+  axis.title = element_text(size = 6)) 
+
+```
+
+## Model mpg ~ all (include the maximum number of predictors necessary)
+
+In order to select the minimal number of predictors that our model will use without compromising the result, we will use the stepwise regression method. For doing that, we will use the function `stepAIC` from the `MASS` package with the parameter **both** that will perform backward and forward stepwise mode.
+
+
+```{r}
+final.lm <- lm(mpg ~., data = mtcars)
+step <- stepAIC(final.lm, direction = "both", trace = FALSE)
+step
+```
+
+
+As a result of the stepwise regression, we obtain that the best model for predicting MPG consumption includes **Weight (wt)**, **Acceleration (qsec)** and **Transmission type (am)**.
+
+
+```{r}
+summary(step)
+```
+
+
+As we can observe, all 3 variables are significant since p-value are below 0.05, and the value of R-squared is `round(summary(step)$r.squared, 3)`, much more higher than the previous moldel.
+
+If now we compare the final model with 3 predictors with the model only including the `am` predictor:
+
+```{r}
+anova(fit, step)
+```
+
+We obtain a p-value for the **anova** near to zero, so it fails to accept the null hypothesis of equal means, indicating that the new added predictors really affect the result in **MPG**.
+
+
+If we run some residuals plots at the final model:
+
+```{r}
+par(mfrow = c(2,2))
+plot(step)
+```
+
+
+## Conclusion
+
+When only consider `am` as a predictor, we obtain that manual es 7.25 MPG better on fuel consumption and if we consider `qsec`, `wt` (best model) this value drops to 2.94 again for manual transmission.
+
+We can observe that for each mille per gallon (MPG) on an automatic transmission, Manual has **`r summary(step)$coef[4]` MPG**.
+
+
+

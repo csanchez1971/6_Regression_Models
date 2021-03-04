@@ -1,0 +1,110 @@
+---
+title: "Generalized_Linear_Models"
+author: "Carlos Sanchez"
+date: "26/02/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/R courses/6_Regression_Models/Week4 - GLM")
+```
+
+
+#GLM for Binary data
+
+```{r}
+download.file("https://dl.dropboxusercontent.com/u/7710864/data/ravensData.rda", destfile = "ravensData.rda", method = "curl")
+load("ravensData.rda")
+head(ravensData)
+```
+
+
+Just linear regression:
+
+
+```{r}
+lmRavens <- lm(ravensData$ravenWinNum ~ ravensData$ravenScore)
+summary(lmRavens)$coef
+```
+
+
+```{r}
+library(manipulate)
+
+x <- seq(-10, 10, length = 1000)
+manipulate(
+  plot(x, exp(beta0 + beta1 * x) / (1 + exp(beta0 + beta1 * x)),
+       type = "l", lwd = 3, frame = FALSE),
+  beta1 = slider(-2, 2, step = .1, initial = 2) ,
+  beta0 = slider(-2, 2, step = .1, initial = 0) 
+)
+
+```
+
+GLM
+
+```{r}
+logRegRavens <- glm(ravensData$ravenWin ~ ravensData$ravenScore, family = "binomial")
+summary(logRegRavens)
+```
+
+
+```{r}
+plot(ravensData$ravenScore, logRegRavens$fitted, pch = 19, col ="blue", xlab="Score", ylab = "Prob Ravens Win")
+
+```
+
+
+```{r}
+exp(logRegRavens$coef)  # 11% increase winning for each additional point
+
+```
+
+
+```{r}
+exp(confint(logRegRavens))
+
+```
+
+
+ANOVA for logistic regression
+
+```{r}
+anova(logRegRavens, test= "Chisq")
+
+```
+
+
+#Hodgepodge
+
+```{r}
+n <- 500
+x <- seq(0, 4 * pi, length = n)
+y = sin(x) + rnorm(n, sd = .3)
+knots <- seq(0, 8 * pi, length = 20)
+splineTerms <- sapply(knots, function(knot) (x > knot) * (x - knot))
+xMat <- cbind(1, x, splineTerms)
+yhat <- predict(lm(y ~ xMat -1))
+
+plot(x, y, frame = FALSE, pch = 21, bg = "lightblue", cex = 1)
+lines(x, yhat, col = "red", lwd = 1)
+```
+
+
+```{r}
+n <- 500
+x <- seq(0, 4 * pi, length = n)
+y = sin(x) + rnorm(n, sd = .3)
+knots <- seq(0, 8 * pi, length = 20)
+splineTerms <- sapply(knots, function(knot) (x > knot) * (x - knot)^2)
+xMat <- cbind(1, x, splineTerms)
+yhat <- predict(lm(y ~ xMat -1))
+
+plot(x, y, frame = FALSE, pch = 21, bg = "lightblue", cex = 1)
+lines(x, yhat, col = "red", lwd = 1)
+
+```
+

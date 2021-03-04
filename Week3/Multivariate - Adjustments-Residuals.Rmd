@@ -1,0 +1,87 @@
+---
+title: "Multivariate - Adjustment/Residuals"
+author: "Carlos Sanchez"
+date: "23/02/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+n <- 100 
+t <- rep(c(0, 1), c(n/2, n/2)) 
+x <- c(runif(n/2), runif(n/2))
+beta0 <- 0 
+beta1 <- 2 
+tau <- 1 
+sigma <- .2
+y <- beta0 + x * beta1 + t * tau + rnorm(n, sd = sigma)
+```
+
+```{r}
+plot(x, y, type = "n", frame = FALSE)
+abline(lm(y ~ x), lwd = 2)
+abline(h = mean(y[1 : (n/2)]), lwd = 3)
+abline(h = mean(y[(n/2 + 1) : n]), lwd = 3)
+fit <- lm(y ~ x + t)
+abline(coef(fit)[1], coef(fit)[2], lwd = 3)
+abline(coef(fit)[1] + coef(fit)[3], coef(fit)[2], lwd = 3)
+points(x[1 : (n/2)], y[1 : (n/2)], pch = 21, col = "black", bg = "lightblue", cex = 2)
+points(x[(n/2 + 1) : n], y[(n/2 + 1) : n], pch = 21, col = "black", bg = "salmon", cex = 2)
+```
+
+
+#Residuals
+
+```{r}
+data(swiss)
+par(mfrow = c(2,2))
+fit <- lm(Fertility ~ ., data = swiss)
+plot(fit)
+```
+
+
+# Simulation examples
+
+##Case 1
+
+```{r}
+n <- 100; x <- c(10, rnorm(n)); y <- c(10, c(rnorm(n)))
+plot(x, y, frame = FALSE, cex = 2, pch = 21, bg = "lightblue", col = "black")
+abline(lm(y ~ x))
+```
+
+
+```{r}
+fit <- lm(y ~ x)
+round(dfbetas(fit)[1 : 10, 2], 3)
+```
+
+
+```{r}
+round(hatvalues(fit)[1 : 10], 3)
+
+```
+
+##Case 2
+
+```{r}
+dat <- read.table('http://www4.stat.ncsu.edu/~stefanski/NSF_Supported/Hidden_Ima\
+ges/orly_owl_files/orly_owl_Lin_4p_5_flat.txt', header = FALSE)
+pairs(dat)
+```
+
+
+```{r}
+fit <- lm(V1 ~ . -1, data = dat)
+summary(fit)$coef
+```
+
+```{r}
+plot(predict(fit), resid(fit), pch = '.')
+```
+
+
+

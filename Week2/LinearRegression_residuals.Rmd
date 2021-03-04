@@ -1,0 +1,158 @@
+---
+title: "Linear Regression"
+author: "Carlos Sanchez"
+date: "17/02/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(UsingR)
+library(ggplot2)
+data(diamonds)
+```
+
+
+```{r}
+g <- ggplot(diamond, aes(x = carat, y = price)) +
+  xlab("Mass (carats)") +
+  ylab("Price") +
+  geom_point(color ="black", alpha = 0.2) +
+  geom_point(color ="blue", alpha = 0.2) +
+  geom_smooth(method = "lm", color = "black")
+
+g
+
+```
+
+
+```{r}
+fit <- lm(price ~ carat, data = diamond)
+fit
+
+```
+
+
+```{r}
+summary(fit)
+```
+
+
+```{r}
+coef(fit)
+```
+
+
+```{r}
+fit2 <- lm(price ~ I(carat - mean(carat)), data = diamond)
+coef(fit2)
+```
+
+
+```{r}
+fit3 <- lm(price ~ I(carat*10), data = diamond)
+fit3
+```
+
+
+```{r}
+newx <- c(0.16, 0.27, 0.34)
+coef(fit)[1] + coef(fit)[2]* newx                   #Predict the new value manually
+predict(fit, newdata = data.frame(carat = newx))
+```
+
+
+#Residuals
+
+```{r}
+data(diamonds)
+
+```
+
+
+```{r}
+y <- diamond$price
+x <- diamond$carat
+n <- length(y)
+
+fit <- lm(y ~ x)
+e <- resid(fit)  #Value of the residuals
+
+y_hat <- predict(fit)  #value on the regression line
+max(abs(e - (y - y_hat)))
+max(abs(e - (y - coef(fit)[1] - coef(fit)[2] * x)))
+```
+
+
+```{r}
+#Verify properties of residuals == 0
+sum(e)
+sum(e * x)
+```
+
+
+```{r}
+plot(diamond$carat, diamond$price,
+     xlab = "Mass (carat)",
+     ylab = "Price (SIN $)",
+     bg = "lightblue",
+     col = "black", cex = 1.1, pch = 21, frame = FALSE)
+
+abline(fit, lwd = 2)
+
+for (i in 1:n){
+  lines(c(x[i], x[i]), c(y[i], y_hat[i]), col = "red", lwd = 2)
+}
+```
+
+
+```{r}
+plot(x, e,
+     xlab = "Mass (carat)",
+     ylab = "Residuals (SIN $)",
+     bg = "lightblue",
+     col = "black", cex = 1.1, pch = 21, frame = FALSE)
+
+abline(h = 0, lwd = 2)
+
+for (i in 1:n){
+  lines(c(x[i], x[i]), c(e[i], 0), col = "red", lwd = 2)
+}
+
+```
+
+
+```{r}
+x <- runif(100, -3, 3)
+y <- x + sin(x) + rnorm(100, sd = .2)
+
+g <- ggplot(data.frame(x = x, y = y), aes(x = x, y = y)) +
+       geom_smooth(method = "lm", colour = "black") + 
+       geom_point(size = 3, colour = "black", alpha = 0.4) +
+       geom_point(size = 3, colour = "red", alpha = 0.4)
+g
+```
+
+
+```{r}
+g <- ggplot(data.frame(x = x, y = resid(lm(y ~ x))), aes(x = x, y = y)) +
+  geom_hline(yintercept = 0, size = 2) +
+       geom_smooth(method = "lm", colour = "black") + 
+       geom_point(size = 3, colour = "black", alpha = 0.4) +
+       geom_point(size = 3, colour = "red", alpha = 0.4) +
+       xlab("X") +
+        ylab("Residual")
+g
+
+```
+
+
+```{r}
+summary(fit)$sigma
+
+```
+
